@@ -5,11 +5,11 @@
  * @addtogroup BrainFPV FC support files
  * @{
  *
- * @file       pios_config.h 
+ * @file       pios_config.h
  * @author     Tau Labs, http://taulabs.org, Copyright (C) 2012-2013
  * @brief      Board specific options that modify PiOS capabilities
  * @see        The GNU Public License (GPL) Version 3
- * 
+ *
  *****************************************************************************/
 /*
  * This program is free software; you can redistribute it and/or modify
@@ -55,6 +55,7 @@
 #define PIOS_INCLUDE_RTC
 #define PIOS_INCLUDE_WDG
 #define PIOS_INCLUDE_FASTHEAP
+#define PIOS_INCLUDE_ONESHOT
 
 /* Select the sensors to include */
 #define PIOS_INCLUDE_MS5611
@@ -111,7 +112,7 @@
 #define PIOS_GPS_SETS_HOMELOCATION      /* GPS options */
 
 #define CAMERASTAB_POI_MODE
- 
+
 /* Alarm Thresholds */
 #define HEAP_LIMIT_WARNING		1000
 #define HEAP_LIMIT_CRITICAL		500

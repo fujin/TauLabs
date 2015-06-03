@@ -34,6 +34,7 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
+#include <math.h>
 
 #include "openpilot.h"
 #include "accessorydesired.h"
@@ -278,6 +279,9 @@ static void actuatorTask(void* parameters)
 
 		float * status = (float *)&mixerStatus; //access status objects as an array of floats
 
+		float minChan = INFINITY;
+		float maxChan = -INFINITY;
+
 		for(int ct=0; ct < MAX_MIX_ACTUATORS; ct++)
 		{
 			if(mixers[ct].type == MIXERSETTINGS_MIXER1TYPE_DISABLED) {
@@ -287,27 +291,15 @@ static void actuatorTask(void* parameters)
 				continue;
 			}
 
-			if((mixers[ct].type == MIXERSETTINGS_MIXER1TYPE_MOTOR) || (mixers[ct].type == MIXERSETTINGS_MIXER1TYPE_SERVO))
+			if((mixers[ct].type == MIXERSETTINGS_MIXER1TYPE_MOTOR) || (mixers[ct].type == MIXERSETTINGS_MIXER1TYPE_SERVO)) {
 				status[ct] = ProcessMixer(ct, curve1, curve2, &mixerSettings, &desired, dT);
-			else
+				minChan = fminf(minChan, status[ct]);
+				maxChan = fmaxf(maxChan, status[ct]);
+			} else {
 				status[ct] = -1;
-
-
-
-			// Motors have additional protection for when to be on
-			if(mixers[ct].type == MIXERSETTINGS_MIXER1TYPE_MOTOR) {
-
-				// If not armed or motors aren't meant to spin all the time
-				if( !armed ||
-				   (!spinWhileArmed && !positiveThrottle))
-				{
-					status[ct] = -1;  //force min throttle
-				}
-				// If armed meant to keep spinning,
-				else if ((spinWhileArmed && !positiveThrottle) ||
-					 (status[ct] < 0) )
-					status[ct] = 0;
 			}
+
+
 
 			// If an accessory channel is selected for direct bypass mode
 			// In this configuration the accessory channel is scaled and mapped
@@ -346,12 +338,46 @@ static void actuatorTask(void* parameters)
 					status[ct] = -1;
 			}
 		}
-		
-		for(int i = 0; i < MAX_MIX_ACTUATORS; i++) 
+
+		float gain = 1.0f;
+		float offset = 0.0f;
+
+		if ((maxChan - minChan) > 1.0f) {
+			gain = 1.0f / (maxChan-minChan);
+
+			maxChan *= gain;
+			minChan *= gain;
+		}
+
+		if (maxChan > 1.0f) {
+			offset = 1.0f - maxChan;
+		} else if (minChan < 0.0f) {
+			offset = -minChan;
+		}
+
+		for(int i = 0; i < MAX_MIX_ACTUATORS; i++)  {
+			// Motors have additional proteiion for when to be on
+			if(mixers[i].type == MIXERSETTINGS_MIXER1TYPE_MOTOR) {
+
+				status[i] = status[i] * gain + offset;
+
+				// If not armed or motors aren't meant to spin all the time
+				if( !armed ||
+				   (!spinWhileArmed && !positiveThrottle))
+				{
+					status[i] = -1;  //force min throttle
+				}
+				// If armed meant to keep spinning,
+				else if ((spinWhileArmed && !positiveThrottle) ||
+					 (status[i] < 0) )
+					status[i] = 0;
+			}
+
 			command.Channel[i] = scaleChannel(status[i],
 							   actuatorSettings.ChannelMax[i],
 							   actuatorSettings.ChannelMin[i],
 							   actuatorSettings.ChannelNeutral[i]);
+		}
 			
 		// Store update time
 		command.UpdateTime = 1000.0f*dT;
@@ -366,7 +392,6 @@ static void actuatorTask(void* parameters)
 #if defined(MIXERSTATUS_DIAGNOSTICS)
 		MixerStatusSet(&mixerStatus);
 #endif
-		
 
 		// Update servo outputs
 		bool success = true;
@@ -404,11 +429,6 @@ float ProcessMixer(const int index, const float curve1, const float curve2,
 		       (((float)mixer->matrix[MIXERSETTINGS_MIXER1VECTOR_ROLL] / 128.0f) * desired->Roll) +
 		       (((float)mixer->matrix[MIXERSETTINGS_MIXER1VECTOR_PITCH] / 128.0f) * desired->Pitch) +
 		       (((float)mixer->matrix[MIXERSETTINGS_MIXER1VECTOR_YAW] / 128.0f) * desired->Yaw);
-
-	if((mixer->type == MIXERSETTINGS_MIXER1TYPE_MOTOR) && (result < 0.0f))
-	{
-			result = 0.0f; //idle throttle
-	}
 
 	return(result);
 }

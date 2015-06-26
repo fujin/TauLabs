@@ -23,3 +23,7 @@ EE_BANK_SIZE        := 0x00003000  # Size of EEPROM storage area (12kb)
 
 EF_BANK_BASE        := 0x08000000  # Start of entire flash image (usually start of bootloader as well)
 EF_BANK_SIZE        := 0x00020000  # Size of the entire flash image (from bootloader until end of firmware)
+
+# TODO(fujin): figure out right values here
+OSCILLATOR_FREQ     :=   8000000
+SYSCLK_FREQ         := 72000000

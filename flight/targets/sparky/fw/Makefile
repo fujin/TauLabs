@@ -51,7 +51,7 @@ OPTMODULES += VtolPathFollower
 OPTMODULES += FixedWingPathFollower
 OPTMODULES += VibrationAnalysis
 OPTMODULES += UAVOMavlinkBridge
-OPTMODULES += UAVOLighttelemetryBridge 
+OPTMODULES += UAVOLighttelemetryBridge
 OPTMODULES += Battery
 OPTMODULES += ComUsbBridge
 OPTMODULES += Airspeed/revolution
@@ -325,4 +325,3 @@ LDFLAGS += -Wl,--fatal-warnings
 LDFLAGS += -T memory.ld $(addprefix -T,$(LINKER_SCRIPTS_APP))
 
 include $(MAKE_INC_DIR)/firmware-common.mk
-

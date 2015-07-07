@@ -41,9 +41,6 @@ static struct pios_internal_adc_dev * PIOS_INTERNAL_ADC_Allocate();
 static bool PIOS_INTERNAL_ADC_validate(struct pios_internal_adc_dev *);
 static void PIOS_INTERNAL_ADC_Config(uint32_t internal_adc_id, uint32_t oversampling);
 static int32_t PIOS_INTERNAL_ADC_PinGet(uint32_t internal_adc_id, uint32_t pin);
-#if defined(PIOS_INCLUDE_FREERTOS)
-static void PIOS_INTERNAL_ADC_SetQueue(uint32_t internal_adc_id, struct pios_queue *data_queue);
-#endif
 static uint8_t PIOS_INTERNAL_ADC_Number_of_Channels(uint32_t internal_adc_id);
 static bool PIOS_INTERNAL_ADC_Available(uint32_t adc_id, uint32_t device_pin);
 static float PIOS_INTERNAL_ADC_LSB_Voltage(uint32_t internal_adc_id);
@@ -56,7 +53,7 @@ enum pios_internal_adc_dev_magic {
 const struct pios_adc_driver pios_internal_adc_driver = {
 		.available	= PIOS_INTERNAL_ADC_Available,
 		.get_pin	= PIOS_INTERNAL_ADC_PinGet,
-		.set_queue	= PIOS_INTERNAL_ADC_SetQueue,
+		.set_queue	= NULL,
 		.number_of_channels = PIOS_INTERNAL_ADC_Number_of_Channels,
 		.lsb_voltage 	= PIOS_INTERNAL_ADC_LSB_Voltage,
 };
@@ -295,22 +292,6 @@ static int32_t PIOS_INTERNAL_ADC_PinGet(uint32_t internal_adc_id, uint32_t pin)
 	/* Return last conversion result */
 	return adc_dev->downsampled_buffer[pin];
 }
-
-#if defined(PIOS_INCLUDE_FREERTOS)
-/**
- * @brief Register a queue to add data to when downsampled 
- * \param[in] internal_adc_id handle to the device
- */
-static void PIOS_INTERNAL_ADC_SetQueue(uint32_t internal_adc_id, struct pios_queue *data_queue)
-{
-	struct pios_internal_adc_dev * adc_dev = (struct pios_internal_adc_dev *)internal_adc_id;
-	if(!PIOS_INTERNAL_ADC_validate(adc_dev))
-	{
-		return;
-	}
-	adc_dev->data_queue = data_queue;
-}
-#endif
 
 /**
  * @brief Downsample the data for each of the channels then call

@@ -191,6 +191,7 @@ static void PIOS_EXTI_0_irq_handler (void)
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 #else
 	bool xHigherPriorityTaskWoken;  // dummy variable
+	(void) xHigherPriorityTaskWoken;
 #endif
 	PIOS_EXTI_HANDLE_LINE(0, xHigherPriorityTaskWoken);
 #ifdef PIOS_INCLUDE_FREERTOS
@@ -205,6 +206,7 @@ static void PIOS_EXTI_1_irq_handler (void)
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 #else
 	bool xHigherPriorityTaskWoken;  // dummy variable
+	(void) xHigherPriorityTaskWoken;
 #endif
 	PIOS_EXTI_HANDLE_LINE(1, xHigherPriorityTaskWoken);
 #ifdef PIOS_INCLUDE_FREERTOS
@@ -219,6 +221,7 @@ static void PIOS_EXTI_2_irq_handler (void)
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 #else
 	bool xHigherPriorityTaskWoken;  // dummy variable
+	(void) xHigherPriorityTaskWoken;
 #endif
 	PIOS_EXTI_HANDLE_LINE(2, xHigherPriorityTaskWoken);
 #ifdef PIOS_INCLUDE_FREERTOS
@@ -233,6 +236,7 @@ static void PIOS_EXTI_3_irq_handler (void)
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 #else
 	bool xHigherPriorityTaskWoken;  // dummy variable
+	(void) xHigherPriorityTaskWoken;
 #endif
 	PIOS_EXTI_HANDLE_LINE(3, xHigherPriorityTaskWoken);
 #ifdef PIOS_INCLUDE_FREERTOS
@@ -247,6 +251,7 @@ static void PIOS_EXTI_4_irq_handler (void)
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 #else
 	bool xHigherPriorityTaskWoken;  // dummy variable
+	(void) xHigherPriorityTaskWoken;
 #endif
 	PIOS_EXTI_HANDLE_LINE(4, xHigherPriorityTaskWoken);
 #ifdef PIOS_INCLUDE_FREERTOS
@@ -261,6 +266,7 @@ static void PIOS_EXTI_9_5_irq_handler (void)
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 #else
 	bool xHigherPriorityTaskWoken;  // dummy variable
+	(void) xHigherPriorityTaskWoken;
 #endif
 	PIOS_EXTI_HANDLE_LINE(5, xHigherPriorityTaskWoken);
 	PIOS_EXTI_HANDLE_LINE(6, xHigherPriorityTaskWoken);
@@ -279,6 +285,7 @@ static void PIOS_EXTI_15_10_irq_handler (void)
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 #else
 	bool xHigherPriorityTaskWoken;  // dummy variable
+	(void) xHigherPriorityTaskWoken;
 #endif
 	PIOS_EXTI_HANDLE_LINE(10, xHigherPriorityTaskWoken);
 	PIOS_EXTI_HANDLE_LINE(11, xHigherPriorityTaskWoken);

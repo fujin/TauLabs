@@ -58,11 +58,13 @@
 
 // Math libraries
 #include "coordinate_conversions.h"
+#include "physical_constants.h"
 #include "pid.h"
 #include "misc_math.h"
 
 // Includes for various stabilization algorithms
 #include "virtualflybar.h"
+#include "rate.h"
 
 // Private constants
 #define MAX_QUEUE_SIZE 1
@@ -312,16 +314,18 @@ static void stabilizationTask(void* parameters)
 			switch(stabDesired.StabilizationMode[i])
 			{
 				case STABILIZATIONDESIRED_STABILIZATIONMODE_RATE:
-					if(reinit)
-						pids[PID_RATE_ROLL + i].iAccumulator = 0;
+					// Store for debugging output TODO(fujin): Why?
+					rateDesiredAxis[i] = stabDesiredAxis[i];
 
-					// Store to rate desired variable for storing to UAVO
-					rateDesiredAxis[i] = bound_sym(stabDesiredAxis[i], settings.ManualRate[i]);
-
-					// Compute the inner loop
-					actuatorDesiredAxis[i] = pid_apply_setpoint(&pids[PID_RATE_ROLL + i],  rateDesiredAxis[i],  gyro_filtered[i], dT);
-					actuatorDesiredAxis[i] = bound_sym(actuatorDesiredAxis[i],1.0f);
-
+					// Run a gyro rate stabilization algorithm on this axis
+					stabilization_rate(gyro_filtered[i],
+									   rateDesiredAxis[i],
+									   &actuatorDesiredAxis[i],
+									   dT,
+									   reinit,
+									   i,
+									   &pids[PID_RATE_ROLL + i],
+									   &settings);
 					break;
 
 				case STABILIZATIONDESIRED_STABILIZATIONMODE_ATTITUDE:
@@ -696,6 +700,9 @@ static void stabilizationTask(void* parameters)
 			}
 		}
 
+		if (settings.RatePiroComp == STABILIZATIONSETTINGS_RATEPIROCOMP_TRUE)
+			stabilization_rate_pirocomp(gyro_filtered[2], dT);
+
 		if (settings.VbarPiroComp == STABILIZATIONSETTINGS_VBARPIROCOMP_TRUE)
 			stabilization_virtual_flybar_pirocomp(gyro_filtered[2], dT);
 
@@ -730,6 +737,26 @@ static void stabilizationTask(void* parameters)
 		else
 			AlarmsClear(SYSTEMALARMS_ALARM_STABILIZATION);
 	}
+}
+
+/**
+ * Want to keep the horizon fixed in world coordinates as we pirouette
+ * @param[in] z_gyro The deg/s of rotation along the z axis
+ * @param[in] dT The time since last sample
+ * @param[in] fI A static array of float integrals used for transformation
+ */
+int stabilization_common_pirocomp(float z_gyro, float dT, float fI[MAX_AXES])
+{
+	float cy = cosf(z_gyro * DEG2RAD * dT);
+	float sy = sinf(z_gyro * DEG2RAD * dT);
+
+	float pitch = cy * fI[1] - sy * fI[0];
+	float roll = sy * fI[1] + cy * fI[0];
+
+	fI[1] = pitch;
+	fI[0] = roll;
+
+	return 0;
 }
 
 

@@ -30,7 +30,7 @@
  */
 
 #include "openpilot.h"
-#include "physical_constants.h"
+
 #include "pid.h"
 #include "stabilization.h"
 #include "stabilizationsettings.h"
@@ -73,22 +73,13 @@ int stabilization_virtual_flybar(float gyro, float command, float *output, float
 }
 
 /**
- * Want to keep the virtual flybar fixed in world coordinates as we pirouette
- * @param[in] z_gyro The deg/s of rotation along the z axis
- * @param[in] dT The time since last sample
+ * Wrap the common piroutte compensation implementation (with our private static float)
+ * @param[in] z_gyro The deg/s of the rotation along the z axis
+ * @param[in] dT Time since last sample
  */
 int stabilization_virtual_flybar_pirocomp(float z_gyro, float dT)
 {
-	float cy = cosf(z_gyro * DEG2RAD * dT);
-	float sy = sinf(z_gyro * DEG2RAD * dT);
-
-	float vbar_pitch = cy * vbar_integral[1] - sy * vbar_integral[0];
-	float vbar_roll = sy * vbar_integral[1] + cy * vbar_integral[0];
-
-	vbar_integral[1] = vbar_pitch;
-	vbar_integral[0] = vbar_roll;
-
-	return 0;
+  return stabilization_common_pirocomp(z_gyro, dT, vbar_integral);
 }
 
 /**

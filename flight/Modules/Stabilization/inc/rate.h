@@ -1,15 +1,14 @@
 /**
  ******************************************************************************
  * @addtogroup TauLabsModules Tau Labs Modules
- * @{ 
+ * @{
  * @addtogroup StabilizationModule Stabilization Module
- * @{ 
+ * @{
  *
- * @file       stabilization.h
- * @author     The OpenPilot Team, http://www.openpilot.org Copyright (C) 2010.
+ * @file       virtualflybar.h
+ * @author     Tau Labs, http://taulabs.org, Copyright (C) 2015
+ * @author     AJ Christensen <aj@junglistheavy.industries>
  * @brief      Attitude stabilization module.
- * @author     Tau Labs, http://taulabs.org, Copyright (C) 2012-2013
- * @brief      Attitude stabilization.
  *
  * @see        The GNU Public License (GPL) Version 3
  *
@@ -30,18 +29,26 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#ifndef STABILIZATION_H
-#define STABILIZATION_H
+#ifndef RATE_H
+#define RATE_H
 
-enum {ROLL,PITCH,YAW,MAX_AXES};
+#include "openpilot.h"
+#include "stabilizationsettings.h"
 
-int32_t StabilizationInitialize();
+int stabilization_rate(float gyro,
+                       float command,
+                       float *output,
+                       float dT,
+                       bool reinit,
+                       uint32_t axis,
+                       struct pid *pid,
+                       StabilizationSettingsData *settings);
 
-int stabilization_common_pirocomp(float z_gyro, float dT, float fI[MAX_AXES]);
+int stabilization_rate_pirocomp(float z_gyro, float dT);
 
-#endif /* STABILIZATION_H */
+#endif /* RATE_H */
 
 /**
-  * @}
-  * @}
-  */
+ * @}
+ * @}
+ */

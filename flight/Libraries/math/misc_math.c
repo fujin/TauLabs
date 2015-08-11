@@ -113,6 +113,20 @@ float expo3(float x, int32_t g)
 	return (x * ((100 - g) / 100.0f) + powf(x, 3) * (g / 100.0f));
 }
 
+/**
+ * Approximation an exponential scale curve (pow5 instead)
+ * @param[in] x   input from [-1,1]
+ * @param[in] g   sets the exponential amount [0,100]
+ * @return  rescaled input
+ *
+ * This function is also used for the expo plot in GCS (config/stabilization/advanced).
+ * Please adapt changes here also to /ground/gcs/src/plugins/config/expocurve.cpp
+ */
+float expo5(float x, int32_t g)
+{
+	return (x * ((100 - g) / 100.0f) + powf(x, 5) * (g / 100.0f));
+}
+
 
 /**
  * @}

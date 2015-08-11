@@ -52,6 +52,7 @@ float circular_modulus_rad(float err);
 
 //! Approximation an exponential scale curve
 float expo3(float x, int32_t g);
+float expo5(float x, int32_t g);
 
 #endif /* MISC_MATH_H */
 

@@ -29,8 +29,8 @@
  */
 
 #include "setupwizard.h"
-#include "pages/startpage.h"
-#include "pages/endpage.h"
+#include "pages/tlstartpage.h"
+#include "pages/tlendpage.h"
 #include "pages/boardtype_unknown.h"
 #include "pages/controllerpage.h"
 #include "pages/vehiclepage.h"
@@ -52,6 +52,8 @@
 #include "actuatorsettings.h"
 #include "pages/autoupdatepage.h"
 #include "uploader/uploadergadgetfactory.h"
+
+using namespace uploader;
 
 SetupWizard::SetupWizard(QWidget *parent) : QWizard(parent), VehicleConfigurationSource(),
     m_controllerType(NULL),
@@ -238,14 +240,8 @@ QString SetupWizard::getSummaryText()
     case Core::IBoardType::INPUT_TYPE_SBUS:
         summary.append(tr("Futaba S.Bus"));
         break;
-    case Core::IBoardType::INPUT_TYPE_DSM2:
-        summary.append(tr("Spektrum satellite (DSM2)"));
-        break;
-    case Core::IBoardType::INPUT_TYPE_DSMX10BIT:
-        summary.append(tr("Spektrum satellite (DSMX10BIT)"));
-        break;
-    case Core::IBoardType::INPUT_TYPE_DSMX11BIT:
-        summary.append(tr("Spektrum satellite (DSMX11BIT)"));
+    case Core::IBoardType::INPUT_TYPE_DSM:
+        summary.append(tr("Spektrum satellite (DSM)"));
         break;
     case Core::IBoardType::INPUT_TYPE_HOTTSUMD:
         summary.append(tr("Graupner HoTT (SUMD)"));
@@ -266,6 +262,9 @@ QString SetupWizard::getSummaryText()
     case ESC_RAPID:
         summary.append(tr("Rapid ESC (400 Hz)"));
         break;
+    case ESC_ONESHOT:
+        summary.append(tr("OneShot (SyncPwm + 125-250us)"));
+        break;
     default:
         summary.append(tr("Unknown"));
     }
@@ -280,7 +279,7 @@ QString SetupWizard::getSummaryText()
 
 void SetupWizard::createPages()
 {
-    setPage(PAGE_START, new StartPage(this));
+    setPage(PAGE_START, new TLStartPage(this));
     setPage(PAGE_UPDATE, new AutoUpdatePage(this));
     setPage(PAGE_CONTROLLER, new ControllerPage(this));
     setPage(PAGE_VEHICLES, new VehiclePage(this));
@@ -298,7 +297,7 @@ void SetupWizard::createPages()
     setPage(PAGE_REBOOT, new RebootPage(this));
     setPage(PAGE_NOTYETIMPLEMENTED, new NotYetImplementedPage(this));
     setPage(PAGE_BOARDTYPE_UNKNOWN, new BoardtypeUnknown(this));
-    setPage(PAGE_END, new EndPage(this));
+    setPage(PAGE_END, new TLEndPage(this));
 
     setStartId(PAGE_START);
 

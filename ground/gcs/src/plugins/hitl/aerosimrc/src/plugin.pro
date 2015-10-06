@@ -51,18 +51,16 @@ equals(copydata, 1) {
 
         # Qt DLLs
         QT_DLLS = \
-                  QtCore4.dll \
-                  QtNetwork4.dll
-        for(dll, QT_DLLS) {
-            data_copy.commands += $(COPY_FILE) $$targetPath(\"$$[QT_INSTALL_BINS]/$$dll\") $$targetPath(\"$$SIM_DIR/$$dll\") $$addNewline()
+                  Qt5Core.dll \
+                  Qt5Network.dll
+        win32-g++ {
+                QT_DLLS += \
+                    libgcc_s_dw2-1.dll \
+                    libstdc++-6.dll
         }
 
-        # MinGW DLLs
-        MINGW_DLLS = \
-                     libgcc_s_dw2-1.dll \
-                     mingwm10.dll
-        for(dll, MINGW_DLLS) {
-            data_copy.commands += $(COPY_FILE) $$targetPath(\"$$(QTMINGW)/$$dll\") $$targetPath(\"$$SIM_DIR/$$dll\") $$addNewline()
+        for(dll, QT_DLLS) {
+            data_copy.commands += $(COPY_FILE) $$targetPath(\"$$[QT_INSTALL_BINS]/$$dll\") $$targetPath(\"$$SIM_DIR/$$dll\") $$addNewline()
         }
 
         data_copy.target = FORCE

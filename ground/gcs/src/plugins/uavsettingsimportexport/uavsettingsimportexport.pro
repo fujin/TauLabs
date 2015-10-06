@@ -1,7 +1,8 @@
 
 TEMPLATE = lib
 QT += xml
-
+QT += widgets
+QT += xmlpatterns
 TARGET = UAVSettingsImportExport
 DEFINES += UAVSETTINGSIMPORTEXPORT_LIBRARY
 include(../../taulabsgcsplugin.pri)
@@ -14,7 +15,8 @@ SOURCES += uavsettingsimportexport.cpp \
     importsummary.cpp \
     uavsettingsimportexportfactory.cpp
  
-OTHER_FILES += uavsettingsimportexport.pluginspec
+OTHER_FILES += uavsettingsimportexport.pluginspec \
+    uavsettingsimportexport.json
 
 FORMS += \
     importsummarydialog.ui

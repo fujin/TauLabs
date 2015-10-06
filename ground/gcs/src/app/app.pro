@@ -5,12 +5,14 @@ TEMPLATE = app
 TARGET = $$GCS_APP_TARGET
 DESTDIR = $$GCS_APP_PATH
 QT += xml
+QT += widgets
 SOURCES += main.cpp \
     customsplash.cpp
 
 
 include(../rpath.pri)
 include(../libs/utils/utils.pri)
+include(../libs/libcrashreporter-qt/libcrashreporter-qt.pri)
 
 HEADERS += customsplash.h
 
@@ -34,5 +36,11 @@ win32 {
 
 OTHER_FILES += taulabs.rc
 
+OTHER_FILES += qtcreator.rc \
+    $$PWD/app_version.h.in
+
 RESOURCES += \
     app_resource.qrc
+
+QMAKE_SUBSTITUTES += $$PWD/app_version.h.in
+

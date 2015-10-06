@@ -11,9 +11,18 @@
 WHEREAMI := $(dir $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR := $(realpath $(WHEREAMI)/../)
 
+# import macros common to all supported build systems
+include $(ROOT_DIR)/make/system-id.mk
+
+TOOLS_DIR := $(ROOT_DIR)/tools
+BUILD_DIR := $(ROOT_DIR)/build
+
+# include the tools makefile
+include $(ROOT_DIR)/make/tools.mk
+
 # Set up some macros
 BUILD_DIR    := $(ROOT_DIR)/build
-VERSION_CMD  := python $(ROOT_DIR)/make/scripts/version-info.py --path="$(ROOT_DIR)"
+VERSION_CMD  := $(PYTHON) $(ROOT_DIR)/make/scripts/version-info.py --path="$(ROOT_DIR)"
 # If there is a tag, use it for label instead of date-hash string
 PACKAGE_TAG  := $(shell $(VERSION_CMD) --format=\$${TAG})
 ifneq ($(PACKAGE_TAG),)
@@ -36,12 +45,18 @@ CLEAN_FLIGHT := YES
 endif
 
 # Set up targets
-ALL_BOARDS        := coptercontrol pipxtreme revolution revomini sparky freedom quanton flyingf3 flyingf4
-ALL_BOARDS_BU     := coptercontrol pipxtreme
-FW_TARGETS        := $(addprefix fw_, $(ALL_BOARDS))
-FW_TARGETS_TOOLS  := $(addprefix fw_, $(ALL_BOARDS))
-BL_TARGETS        := $(addprefix bl_, $(ALL_BOARDS))
-BU_TARGETS        := $(addprefix bu_, $(ALL_BOARDS_BU))
+ALL_BOARDS        := coptercontrol pipxtreme revomini sparky sparky2 sparkybgc quanton colibri flyingf3 flyingf4 aq32 naze32 brain
+ALL_BOARDS_BU     := coptercontrol pipxtreme brain
+
+FW_BOARDS  := $(ALL_BOARDS)
+BL_BOARDS  := $(filter-out naze32, $(ALL_BOARDS))
+BU_BOARDS  := $(ALL_BOARDS_BU)
+EF_BOARDS  := $(filter-out naze32, $(ALL_BOARDS))
+
+FW_TARGETS        := $(addprefix fw_, $(FW_BOARDS))
+FW_TARGETS_TOOLS  := $(addprefix fw_, $(FW_BOARDS))
+BL_TARGETS        := $(addprefix bl_, $(BL_BOARDS))
+BU_TARGETS        := $(addprefix bu_, $(BU_BOARDS))
 
 help:
 	@echo

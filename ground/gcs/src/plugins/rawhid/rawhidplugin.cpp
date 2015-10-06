@@ -31,8 +31,7 @@
 #include <coreplugin/icore.h>
 #include <QtCore/QtPlugin>
 #include <QtCore/QMutexLocker>
-
-#include "pjrc_rawhid.h"
+#include <QDebug>
 
 #include "rawhid_const.h"
 
@@ -191,7 +190,5 @@ bool RawHIDPlugin::initialize(const QStringList & arguments, QString * errorStri
 
     return true;
 }
-
-Q_EXPORT_PLUGIN(RawHIDPlugin)
 
 // **********************************************************************

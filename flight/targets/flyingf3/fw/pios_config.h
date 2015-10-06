@@ -6,7 +6,7 @@
  * @{
  *
  * @file       pios_config.h 
- * @author     Tau Labs, http://taulabs.org, Copyright (C) 2012-2014
+ * @author     Tau Labs, http://taulabs.org, Copyright (C) 2012-2015
  * @brief      Board specific options that modify PiOS capabilities
  * @see        The GNU Public License (GPL) Version 3
  * 
@@ -31,7 +31,7 @@
 #define PIOS_CONFIG_H
 
 /* Major features */
-#define PIOS_INCLUDE_FREERTOS
+#define PIOS_INCLUDE_CHIBIOS
 #define PIOS_INCLUDE_BL_HELPER
 
 /* Enable/Disable PiOS Modules */
@@ -59,6 +59,7 @@
 #define PIOS_INCLUDE_WDG
 #define PIOS_INCLUDE_ADC
 #define PIOS_INCLUDE_FASTHEAP
+#define PIOS_INCLUDE_HPWM
 
 /* Select the sensors to include */
 #define PIOS_INCLUDE_L3GD20
@@ -66,6 +67,7 @@
 #define PIOS_INCLUDE_ETASV3
 #define PIOS_INCLUDE_MPXV5004
 #define PIOS_INCLUDE_MPXV7002
+#define PIOS_INCLUDE_BMP085
 #define FLASH_FREERTOS
 /* Com systems to include */
 #define PIOS_INCLUDE_COM
@@ -74,7 +76,9 @@
 #define PIOS_INCLUDE_COM_FLEXI
 #define PIOS_INCLUDE_MAVLINK
 #define PIOS_INCLUDE_HOTT
-//#define PIOS_INCLUDE_LIGHTTELEMETRY
+#define PIOS_INCLUDE_LIGHTTELEMETRY
+#define PIOS_INCLUDE_SESSION_MANAGEMENT
+#define PIOS_INCLUDE_FRSKY_SPORT_TELEMETRY
 
 #define PIOS_INCLUDE_GPS
 #define PIOS_INCLUDE_GPS_NMEA_PARSER
@@ -92,9 +96,6 @@
 #define PIOS_INCLUDE_FLASH_INTERNAL
 #define PIOS_INCLUDE_LOGFS_SETTINGS
 
-/* Other Interfaces */
-//#define PIOS_INCLUDE_I2C_ESC
-
 #define CAMERASTAB_POI_MODE
 
 /* Flags that alter behaviors - mostly to lower resources for CC */
@@ -110,10 +111,10 @@
 #define CPULOAD_LIMIT_CRITICAL		95
 
 /* Task stack sizes */
-#define PIOS_EVENTDISPATCHER_STACK_SIZE	256
+#define PIOS_EVENTDISPATCHER_STACK_SIZE	1024
 
 /*
- * This has been calibrated 2013/03/11 using next @ 6d21c7a590619ebbc074e60cab5e134e65c9d32b.
+ * This has been calibrated 2014/02/21 using chibios @ b89da8ac379646ac421bb65a209210e637bba223.
  * Calibration has been done by disabling the init task, breaking into debugger after
  * approximately after 60 seconds, then doing the following math:
  *
@@ -123,9 +124,7 @@
  * configuration like number of task priorities or similar changes.
  * A change in the cpu load calculation or the idle task handler will invalidate this as well.
  */
-#define IDLE_COUNTS_PER_SEC_AT_NO_LOAD (1459667)
-
-#define REVOLUTION
+#define IDLE_COUNTS_PER_SEC_AT_NO_LOAD (2175780)
 
 #endif /* PIOS_CONFIG_H */
 /**

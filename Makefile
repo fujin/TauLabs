@@ -1,12 +1,15 @@
 # Makefile for Taulabs project
 .DEFAULT_GOAL := help
 
+WHEREAMI := $(dir $(lastword $(MAKEFILE_LIST)))
+ROOT_DIR := $(realpath $(WHEREAMI)/ )
+
 # import macros common to all supported build systems
 include $(CURDIR)/make/system-id.mk
 
 # configure some directories that are relative to wherever ROOT_DIR is located
 TOOLS_DIR := $(ROOT_DIR)/tools
-BUILD_DIR := $(ROOT_DIR)/build
+export BUILD_DIR := $(ROOT_DIR)/build
 DL_DIR := $(ROOT_DIR)/downloads
 
 # import macros that are OS specific
@@ -51,6 +54,7 @@ endef
 # These specific variables can influence gcc in unexpected (and undesirable) ways
 SANITIZE_GCC_VARS := TMPDIR GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH
 SANITIZE_GCC_VARS += CFLAGS CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH OBJC_INCLUDE_PATH DEPENDENCIES_OUTPUT
+SANITIZE_GCC_VARS += ARCHFLAGS
 $(foreach var, $(SANITIZE_GCC_VARS), $(eval $(call SANITIZE_VAR,$(var),disallowed)))
 
 # These specific variables used to be valid but now they make no sense
@@ -75,6 +79,9 @@ include $(ROOT_DIR)/flight/targets/*/target-defs.mk
 # OpenPilot GCS build configuration (debug | release)
 GCS_BUILD_CONF ?= debug
 
+# And the flight build configuration (debug | default | release)
+export FLIGHT_BUILD_CONF ?= default
+
 ##############################
 #
 # Check that environmental variables are sane
@@ -98,6 +105,16 @@ ifdef GCS_BUILD_CONF
  endif
 endif
 
+ifdef FLIGHT_BUILD_CONF
+ ifneq ($(FLIGHT_BUILD_CONF), release)
+  ifneq ($(FLIGHT_BUILD_CONF), debug)
+   ifneq ($(FLIGHT_BUILD_CONF), default)
+    $(error Only debug or release are allowed for FLIGHT_BUILD_CONF)
+   endif
+  endif
+ endif
+endif
+
 ##############################
 #
 # Help instructions
@@ -112,7 +129,7 @@ help:
 	@echo "   Here is a summary of the available targets:"
 	@echo
 	@echo "   [Tool Installers]"
-	@echo "     qt_sdk_install       - Install the QT v4.7.3 tools"
+	@echo "     qt_sdk_install       - Install the Qt tools"
 	@echo "     arm_sdk_install      - Install the GNU ARM gcc toolchain"
 	@echo "     openocd_install      - Install the OpenOCD SWD/JTAG daemon"
 	@echo "        \$$OPENOCD_FTDI     - Set to no in order not to install legacy FTDI support for OpenOCD."
@@ -122,6 +139,7 @@ help:
 	@echo "     gui_install          - Install the make gui tool"
 	@echo "     gtest_install        - Install the google unit test suite"
 	@echo "     astyle_install       - Install the astyle code formatter"	
+	@echo "     openssl_install      - Install the openssl libraries on windows machines"	
 	@echo
 	@echo "   [Big Hammer]"
 	@echo "     all                  - Generate UAVObjects, build openpilot firmware and gcs"
@@ -178,12 +196,8 @@ help:
 	@echo "     ut_<test>_run        - Run test and dump TAP output to console"
 	@echo
 	@echo "   [Simulation]"
-	@echo "     sim_<os>_<board>     - Build host simulation firmware for <os> and <board>"
-	@echo "                            supported tuples are:"
-	@echo "                               sim_osx_revolution"
-	@echo "                               sim_posix_revolution"
-	@echo "                               sim_win32_revolution (broken)"
-	@echo "     sim_<os>_<board>_clean - Delete all build output for the simulation"
+	@echo "     simulation           - Build host simulation firmware"
+	@echo "     simulation_clean     - Delete all build output for the simulation"
 	@echo
 	@echo "   [GCS]"
 	@echo "     gcs                  - Build the Ground Control System (GCS) application"
@@ -203,11 +217,10 @@ help:
 	@echo "   [UAVObjects]"
 	@echo "     uavobjects           - Generate source files from the UAVObject definition XML files"
 	@echo "     uavobjects_test      - parse xml-files - check for valid, duplicate ObjId's, ... "
-	@echo "     uavobjects_<group>   - Generate source files from a subset of the UAVObject definition XML files"
-	@echo "                            supported groups are ($(UAVOBJ_TARGETS))"
 	@echo
 	@echo "   [Package]"
 	@echo "     package              - Executes a make all_clean and then generates a complete package build for"
+	@echo "     standalone           - Executes a make all_clean and compiles a package without packaging"
 	@echo "                            the GCS and all target board firmwares."
 	@echo
 	@echo "   [Misc]"
@@ -221,7 +234,7 @@ help:
 	@echo
 
 .PHONY: all
-all: uavobjects all_ground all_flight
+all: all_ground all_flight
 
 .PHONY: all_clean
 all_clean:
@@ -245,31 +258,44 @@ $(BUILD_DIR):
 .PHONY: all_ground
 all_ground: gcs
 
+ifndef WINDOWS
+# unfortunately the silent linking command is broken on windows
 ifeq ($(V), 1)
 GCS_SILENT := 
 else
 GCS_SILENT := silent
 endif
+endif
 
 .PHONY: gcs
-gcs:  uavobjects_gcs
+gcs:  uavobjects
 	$(V1) mkdir -p $(BUILD_DIR)/ground/$@
 	$(V1) ( cd $(BUILD_DIR)/ground/$@ && \
 	  PYTHON=$(PYTHON) $(QMAKE) $(ROOT_DIR)/ground/gcs/gcs.pro -spec $(QT_SPEC) -r CONFIG+="$(GCS_BUILD_CONF) $(GCS_SILENT)" $(GCS_QMAKE_OPTS) && \
 	  $(MAKE) -w ; \
 	)
 
+# Workaround for qmake bug that prevents copying the application icon
+ifneq (,$(filter $(UNAME), Darwin))
+	$(V1) ( cd $(BUILD_DIR)/ground/gcs/src/app && \
+	  $(MAKE) ../../bin/Tau\ Labs\ GCS.app/Contents/Resources/taulabs.icns && \
+	  $(MAKE) ../../bin/Tau\ Labs\ GCS.app/Contents/Info.plist ; \
+	)
+endif
+
 .PHONY: gcs_clean
 gcs_clean:
 	$(V0) @echo " CLEAN      $@"
 	$(V1) [ ! -d "$(BUILD_DIR)/ground/gcs" ] || $(RM) -r "$(BUILD_DIR)/ground/gcs"
 
+ifndef WINDOWS
+# unfortunately the silent linking command is broken on windows
 ifeq ($(V), 1)
 UAVOGEN_SILENT := 
 else
 UAVOGEN_SILENT := silent
 endif
-
+endif
 .PHONY: uavobjgenerator
 uavobjgenerator:
 	$(V1) mkdir -p $(BUILD_DIR)/ground/$@
@@ -278,22 +304,16 @@ uavobjgenerator:
 	  $(MAKE) --no-print-directory -w ; \
 	)
 
-UAVOBJ_TARGETS := gcs flight python matlab java wireshark
-.PHONY:uavobjects
-uavobjects:  $(addprefix uavobjects_, $(UAVOBJ_TARGETS))
-
 UAVOBJ_XML_DIR := $(ROOT_DIR)/shared/uavobjectdefinition
 UAVOBJ_OUT_DIR := $(BUILD_DIR)/uavobject-synthetics
 
-$(UAVOBJ_OUT_DIR):
-	$(V1) mkdir -p $@
-
-uavobjects_%: $(UAVOBJ_OUT_DIR) uavobjgenerator
+uavobjects: uavobjgenerator
+	$(V1) mkdir -p $(UAVOBJ_OUT_DIR)
 	$(V1) ( cd $(UAVOBJ_OUT_DIR) && \
-	  $(UAVOBJGENERATOR) -$* $(UAVOBJ_XML_DIR) $(ROOT_DIR) ; \
+	  $(UAVOBJGENERATOR) $(UAVOBJ_XML_DIR) $(ROOT_DIR) ; \
 	)
 
-uavobjects_test: $(UAVOBJ_OUT_DIR) uavobjgenerator
+uavobjects_test: uavobjgenerator
 	$(V1) $(UAVOBJGENERATOR) -v -none $(UAVOBJ_XML_DIR) $(ROOT_DIR)
 
 uavobjects_clean:
@@ -311,7 +331,7 @@ $(MATLAB_OUT_DIR):
 	$(V1) mkdir -p $@
 
 FORCE:
-$(MATLAB_OUT_DIR)/LogConvert.m: $(MATLAB_OUT_DIR) uavobjects_matlab FORCE
+$(MATLAB_OUT_DIR)/LogConvert.m: $(MATLAB_OUT_DIR) uavobjects FORCE
 	$(V1) $(PYTHON) $(ROOT_DIR)/make/scripts/version-info.py \
 		--path=$(ROOT_DIR) \
 		--template=$(BUILD_DIR)/uavobject-synthetics/matlab/LogConvert.m.pass1 \
@@ -319,7 +339,7 @@ $(MATLAB_OUT_DIR)/LogConvert.m: $(MATLAB_OUT_DIR) uavobjects_matlab FORCE
 		--uavodir=$(ROOT_DIR)/shared/uavobjectdefinition
 
 .PHONY: matlab
-matlab: uavobjects_matlab $(MATLAB_OUT_DIR)/LogConvert.m
+matlab: uavobjects $(MATLAB_OUT_DIR)/LogConvert.m
 
 ################################
 #
@@ -381,7 +401,7 @@ androidgcs_clean:
 #
 # Find the git hashes of each commit that changes uavobjects with:
 #   git log --format=%h -- shared/uavobjectdefinition/ | head -n 6 | tr '\n' ' '
-UAVO_GIT_VERSIONS := next 
+UAVO_GIT_VERSIONS := HEAD 
 
 # All versions includes a pseudo collection called "working" which represents
 # the UAVOs in the source tree
@@ -438,8 +458,8 @@ $$(UAVO_COLLECTION_DIR)/$(1)/uavohash: $$(UAVO_COLLECTION_DIR)/$(1)/uavo-xml
 # Generate the java uavobjects for this UAVO collection
 $$(UAVO_COLLECTION_DIR)/$(1)/java-build/java: $$(UAVO_COLLECTION_DIR)/$(1)/uavohash uavobjgenerator
 	$$(V0) @echo " UAVOJAVA  $(1)   " $$$$(cat $$(UAVO_COLLECTION_DIR)/$(1)/uavohash)
-	$$(V1) mkdir -p $$@
 	$$(V1) ( \
+		mkdir -p $$(UAVO_COLLECTION_DIR)/$(1)/java-build && \
 		cd $$(UAVO_COLLECTION_DIR)/$(1)/java-build && \
 		$$(UAVOBJGENERATOR) -java $$(UAVO_COLLECTION_DIR)/$(1)/uavo-xml/shared/uavobjectdefinition $$(ROOT_DIR) ; \
 	)
@@ -531,16 +551,21 @@ OPUAVSYNTHDIR := $(BUILD_DIR)/uavobject-synthetics/flight
 # $(1) = Canonical board name all in lower case (e.g. coptercontrol)
 # $(2) = Unused
 # $(3) = Short name for board (e.g. CC)
-# $(4) = Host sim variant (e.g. posix, osx, win32)
+# $(4) = Host sim variant (e.g. posix)
 # $(5) = Build output type (e.g. elf, exe)
-define SIM_TEMPLATE
-.PHONY: sim_$(4)_$(1)
-sim_$(4)_$(1): sim_$(4)_$(1)_$(5)
 
-sim_$(4)_$(1)_%: TARGET=sim_$(4)_$(1)
-sim_$(4)_$(1)_%: OUTDIR=$(BUILD_DIR)/$$(TARGET)
-sim_$(4)_$(1)_%: BOARD_ROOT_DIR=$(ROOT_DIR)/flight/targets/$(1)
-sim_$(4)_$(1)_%: uavobjects_flight
+.PHONY: simulation
+simulation: sim_posix
+
+# Legacy for people who were using the old target name
+.PHONY: sim_posix_revolution
+sim_posix_revolution: sim_posix
+
+define SIM_TEMPLATE
+sim_$(4): TARGET=sim_$(4)
+sim_$(4): OUTDIR=$(BUILD_DIR)/$$(TARGET)
+sim_$(4): BOARD_ROOT_DIR=$(ROOT_DIR)/flight/targets/$(1)
+sim_$(4): uavobjects
 	$(V1) mkdir -p $$(OUTDIR)/dep
 	$(V1) cd $$(BOARD_ROOT_DIR)/fw && \
 		$$(MAKE) --no-print-directory \
@@ -569,10 +594,10 @@ sim_$(4)_$(1)_%: uavobjects_flight
 		\
 		$$*
 
-.PHONY: sim_$(4)_$(1)_clean
-sim_$(4)_$(1)_%: TARGET=sim_$(4)_$(1)
-sim_$(4)_$(1)_%: OUTDIR=$(BUILD_DIR)/$$(TARGET)
-sim_$(4)_$(1)_clean:
+.PHONY: sim_$(4)_clean
+sim_$(4)_clean: TARGET=sim_$(4)
+sim_$(4)_clean: OUTDIR=$(BUILD_DIR)/$$(TARGET)
+sim_$(4)_clean:
 	$(V0) @echo " CLEAN      $$@"
 	$(V1) [ ! -d "$$(OUTDIR)" ] || $(RM) -r "$$(OUTDIR)"
 endef
@@ -588,7 +613,7 @@ fw_$(1): fw_$(1)_tlfw
 fw_$(1)_%: TARGET=fw_$(1)
 fw_$(1)_%: OUTDIR=$(BUILD_DIR)/$$(TARGET)
 fw_$(1)_%: BOARD_ROOT_DIR=$(ROOT_DIR)/flight/targets/$(1)
-fw_$(1)_%: uavobjects_flight
+fw_$(1)_%: uavobjects_armsoftfp uavobjects_armhardfp
 	$(V1) mkdir -p $$(OUTDIR)/dep
 	$(V1) cd $$(BOARD_ROOT_DIR)/fw && \
 		$$(MAKE) -r --no-print-directory \
@@ -789,6 +814,56 @@ ifneq ($(word 2,$(MAKECMDGOALS)),)
 export ENABLE_MSG_EXTRA := yes
 endif
 
+uavobjects_armsoftfp: TARGET=uavobjects_armsoftfp
+uavobjects_armsoftfp: OUTDIR=$(BUILD_DIR)/$(TARGET)
+uavobjects_armsoftfp: uavobjects
+	$(V1) mkdir -p $(OUTDIR)/dep
+	$(V1) cd $(ROOT_DIR)/flight/uavobjectlib && \
+		$(MAKE) -r --no-print-directory \
+		TCHAIN_PREFIX="$(ARM_SDK_PREFIX)" \
+		REMOVE_CMD="$(RM)" \
+		\
+		MAKE_INC_DIR=$(MAKE_INC_DIR) \
+		ROOT_DIR=$(ROOT_DIR) \
+		TARGET=$(TARGET) \
+		OUTDIR=$(OUTDIR) \
+		\
+		PIOS=$(PIOS) \
+		FLIGHTLIB=$(FLIGHTLIB) \
+		OPMODULEDIR=$(OPMODULEDIR) \
+		OPUAVOBJ=$(OPUAVOBJ) \
+		OPUAVTALK=$(OPUAVTALK) \
+		DOXYGENDIR=$(DOXYGENDIR) \
+		OPUAVSYNTHDIR=$(OPUAVSYNTHDIR) \
+		SHAREDAPIDIR=$(SHAREDAPIDIR) \
+		\
+		$@
+
+uavobjects_armhardfp: TARGET=uavobjects_armhardfp
+uavobjects_armhardfp: OUTDIR=$(BUILD_DIR)/$(TARGET)
+uavobjects_armhardfp: uavobjects
+	$(V1) mkdir -p $(OUTDIR)/dep
+	$(V1) cd $(ROOT_DIR)/flight/uavobjectlib && \
+		$(MAKE) -r --no-print-directory \
+		TCHAIN_PREFIX="$(ARM_SDK_PREFIX)" \
+		REMOVE_CMD="$(RM)" \
+		\
+		MAKE_INC_DIR=$(MAKE_INC_DIR) \
+		ROOT_DIR=$(ROOT_DIR) \
+		TARGET=$(TARGET) \
+		OUTDIR=$(OUTDIR) \
+		\
+		PIOS=$(PIOS) \
+		FLIGHTLIB=$(FLIGHTLIB) \
+		OPMODULEDIR=$(OPMODULEDIR) \
+		OPUAVOBJ=$(OPUAVOBJ) \
+		OPUAVTALK=$(OPUAVTALK) \
+		DOXYGENDIR=$(DOXYGENDIR) \
+		OPUAVSYNTHDIR=$(OPUAVSYNTHDIR) \
+		SHAREDAPIDIR=$(SHAREDAPIDIR) \
+		\
+		$@
+
 # $(1) = Canonical board name all in lower case (e.g. coptercontrol)
 define BOARD_PHONY_TEMPLATE
 .PHONY: all_$(1)
@@ -806,16 +881,16 @@ endef
 
 # Start out assuming that we'll build fw, bl and bu for all boards
 FW_BOARDS  := $(ALL_BOARDS)
-BL_BOARDS  := $(ALL_BOARDS)
-BU_BOARDS  := $(ALL_BOARDS)
-EF_BOARDS  := $(ALL_BOARDS)
+BL_BOARDS  := $(filter-out naze32, $(ALL_BOARDS))
+BU_BOARDS  := $(BL_BOARDS)
+EF_BOARDS  := $(filter-out naze32, $(ALL_BOARDS))
 
 # Sim targets are different for each host OS
 ifeq ($(UNAME), Linux)
-SIM_BOARDS := sim_posix_revolution
+SIM_BOARDS := sim_posix
 else ifeq ($(UNAME), Darwin)
-SIM_BOARDS := sim_osx_revolution
-else ifeq ($(UNAME), MINGW32_NT-6.1)   # Windows 7
+SIM_BOARDS := sim_posix
+else ifdef WINDOWS
 SIM_BOARDS := 
 else # unknown OS
 SIM_BOARDS := 
@@ -867,9 +942,7 @@ $(foreach board, $(BL_BOARDS), $(eval $(call BL_TEMPLATE,$(board),$($(board)_cpu
 $(foreach board, $(EF_BOARDS), $(eval $(call EF_TEMPLATE,$(board),$($(board)_friendly),$($(board)_short))))
 
 # Expand the available simulator rules
-$(eval $(call SIM_TEMPLATE,revolution,Revolution,'revo',osx,elf))
-$(eval $(call SIM_TEMPLATE,revolution,Revolution,'revo',posix,elf))
-$(eval $(call SIM_TEMPLATE,openpilot,OpenPilot,'op  ',win32,exe))
+$(eval $(call SIM_TEMPLATE,simulation,Simulation,'sim ',posix,elf))
 
 ##############################
 #
@@ -877,7 +950,7 @@ $(eval $(call SIM_TEMPLATE,openpilot,OpenPilot,'op  ',win32,exe))
 #
 ##############################
 
-ALL_UNITTESTS := logfs i2c_vm misc_math sin_lookup coordinate_conversions
+ALL_UNITTESTS := logfs i2c_vm misc_math coordinate_conversions error_correcting streamfs dsm timeutils
 ALL_PYTHON_UNITTESTS := python_ut_test
 
 UT_OUT_DIR := $(BUILD_DIR)/unit_tests
@@ -886,7 +959,7 @@ $(UT_OUT_DIR):
 	$(V1) mkdir -p $@
 
 .PHONY: all_ut
-all_ut: $(addsuffix _elf, $(addprefix ut_, $(ALL_UNITTESTS)))
+all_ut: $(addsuffix _elf, $(addprefix ut_, $(ALL_UNITTESTS))) $(ALL_PYTHON_UNITTESTS)
 
 # The all_ut_tap goal is a legacy alias for the all_ut_xml target so that Jenkins
 # can still build old branches.  This can be deleted in a few months when all
@@ -960,6 +1033,14 @@ python_ut_test:
 	$(V0) @echo "  PYTHON_UT test.py"
 	$(V1) $(PYTHON) python/test.py
 
+.PHONY: python_ut_ins
+python_ut_ins:
+	$(V0) @echo "  PYTHON_UT ins/test.py"
+	$(V1) ( cd python/ins && \
+	  $(PYTHON) setup.py build_ext --inplace && \
+	  $(PYTHON) test.py \
+	)
+
 # Disable parallel make when the all_ut_run target is requested otherwise the TAP
 # output is interleaved with the rest of the make output.
 ifneq ($(strip $(filter all_ut_run,$(MAKECMDGOALS))),)
@@ -976,6 +1057,10 @@ endif
 .PHONY: package
 package:
 	$(V1) cd $@ && $(MAKE) --no-print-directory $@
+
+.PHONY: standalone
+standalone:
+	$(V1) cd package && $(MAKE) --no-print-directory $@
 
 .PHONY: package_resources
 package_resources:

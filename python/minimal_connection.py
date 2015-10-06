@@ -9,6 +9,8 @@ import argparse
 import errno
 import code
 import struct
+import time
+from taulabs import uavo, telemetry, uavo_collection
 
 #-------------------------------------------------------------------------------
 USAGE = "%(prog)s"
@@ -17,44 +19,25 @@ DESC  = """
 """
 
 #-------------------------------------------------------------------------------
-def normalize_path(path):
-    return os.path.normpath(os.path.join(os.getcwd(), path))
-
-#-------------------------------------------------------------------------------
 def main():
-    # Setup the command line arguments.
-    parser = argparse.ArgumentParser(usage = USAGE, description = DESC)
+    tStream = telemetry.get_telemetry_by_args(service_in_iter=False)
+    tStream.start_thread()
 
-    parser.add_argument("-g", "--githash",
-                        action  = "store",
-                        dest    = "githash",
-                        help    = "override githash for UAVO XML definitions")
+    settings_objects = tStream.uavo_defs.get_settings_objects()
 
-    # Parse the command-line.
-    args = parser.parse_args()
+    # Need to actually control send rates and see when we're done.
+    for s in settings_objects:
+        tStream.request_object(s)
+        time.sleep(0.15)
 
-    githash = "next"
-    if args.githash is not None:
-        githash = args.githash
+    time.sleep(2.5)
 
-    import taulabs
-    uavo_defs = taulabs.uavo_collection.UAVOCollection()
-    uavo_defs.from_git_hash(githash)
-    uavo_list = taulabs.uavo_list.UAVOList(uavo_defs)
-
-    # Expose the UAVO types to the local workspace
-    uavo_classes = [(t[0], t[1]) for t in taulabs.uavo.__dict__.iteritems() if 'UAVO_' in t[0]]
-    locals().update(uavo_classes)
-
-    print "Found %d unique UAVO definitions" % len(uavo_defs)
-
-    parser = taulabs.uavtalk.UavTalk(uavo_defs)
-    telemetry = taulabs.telemetry.Telemetry(parser)
-
-    telemetry.open_network()
-
-    while True:
-        telemetry.serviceConnection()
+    for s in settings_objects:
+        val = tStream.last_values.get(s)
+        if val is not None:
+            print val
+        else:
+            print "No instance of %s" % (s._name)
 
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
  * @file       main.cpp
  * @author     The OpenPilot Team, http://www.openpilot.org Copyright (C) 2010.
  *             Parts by Nokia Corporation (qt-info@nokia.com) Copyright (C) 2009.
- * @author     Tau Labs, http://taulabs.org, Copyright (C) 2013
+ * @author     Tau Labs, http://taulabs.org, Copyright (C) 2013-2015
  * @brief      Main() file
  * @see        The GNU Public License (GPL) Version 3
  * @defgroup   app GCS main application group
@@ -42,15 +42,29 @@
 #include <QtCore/QLibraryInfo>
 #include <QtCore/QTranslator>
 #include <QtCore/QSettings>
+#include <QtCore/QRegularExpression>
 #include <QtCore/QVariant>
 
-#include <QtGui/QMessageBox>
-#include <QtGui/QApplication>
-#include <QtGui/QMainWindow>
+#include <QMessageBox>
+#include <QApplication>
+#include <QMainWindow>
 
 #include <QPixmap>
 #include "customsplash.h"
 #include <QBitmap>
+#include "libcrashreporter-qt/libcrashreporter-handler/Handler.h"
+
+#include "../../../../../build/ground/gcs/gcsversioninfo.h"
+
+#define USE_CRASHREPORTING
+#ifdef Q_OS_WIN
+#ifndef _MSC_VER
+#undef USE_CRASHREPORTING
+#endif
+#endif
+#ifdef Q_OS_MAC
+#undef USE_CRASHREPORTING
+#endif
 
 enum { OptionIndent = 4, DescriptionIndent = 24 };
 
@@ -242,6 +256,7 @@ int main(int argc, char **argv)
     getrlimit(RLIMIT_NOFILE, &rl);
     rl.rlim_cur = rl.rlim_max;
     setrlimit(RLIMIT_NOFILE, &rl);
+    QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings, true);
 
     if ( QSysInfo::MacintoshVersion > QSysInfo::MV_10_8 )
     {
@@ -253,22 +268,39 @@ int main(int argc, char **argv)
 #ifdef Q_OS_LINUX
     QApplication::setAttribute(Qt::AA_X11InitThreads, true);
     // This should have faster performance on linux
-    QApplication::setGraphicsSystem("raster");
 #endif
 
     SharedTools::QtSingleApplication app((QLatin1String(appNameC)), argc, argv);
+
+#ifdef USE_CRASHREPORTING
+    QString dirName(GCS_REVISION_PRETTY);
+    dirName = dirName.replace("%@%", "_");
+
+    // Limit to alphanumerics plus dots, because this will be a filename
+    // component.
+    dirName = dirName.replace(QRegularExpression("[^A-Za-z0-9.]+"), "_");
+
+    dirName = QDir::tempPath() + QDir::separator() + "taulabsgcs_" + dirName;
+    QDir().mkdir(dirName);
+    new CrashReporter::Handler(dirName, true, "crashreporterapp");
+#endif
 
     QString locale = QLocale::system().name();
 
     // Must be done before any QSettings class is created
     QSettings::setPath(XmlConfig::XmlSettingsFormat, QSettings::SystemScope,
             QCoreApplication::applicationDirPath()+QLatin1String(SHARE_PATH));
-    // keep this in sync with the MainWindow ctor in coreplugin/mainwindow.cpp
-    QSettings settings(XmlConfig::XmlSettingsFormat, QSettings::UserScope,
-                                 QLatin1String("TauLabs"), QLatin1String("TauLabs_config"));
 
-    overrideSettings(settings, argc, argv);
-    locale = settings.value("General/OverrideLanguage", locale).toString();
+    // Scope this so that we are guaranteed that the QSettings file is closed immediately. This
+    // prevents corruption.
+    {
+        // keep this in sync with the MainWindow ctor in coreplugin/mainwindow.cpp
+        QSettings settings(XmlConfig::XmlSettingsFormat, QSettings::UserScope,
+                           QLatin1String("TauLabs"), QLatin1String("TauLabs_config"));
+
+        overrideSettings(settings, argc, argv);
+        locale = settings.value("General/OverrideLanguage", locale).toString();
+    }
 
     QTranslator translator;
     QTranslator qtTranslator;

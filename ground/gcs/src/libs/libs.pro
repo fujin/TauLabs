@@ -1,6 +1,6 @@
 TEMPLATE  = subdirs
 CONFIG   += ordered
-
+QT += widgets
 SUBDIRS   = \
     qscispinbox\
     qtconcurrent \
@@ -9,17 +9,13 @@ SUBDIRS   = \
     utils \
     tlmapcontrol \
     qwt \
-    qextserialport \
-    libqxt
-
+    libcrashreporter-qt
 SDL {
 SUBDIRS += sdlgamepad
 }
 
 !LIGHTWEIGHT_GCS {
- !macx {
-  SUBDIRS += glc_lib
- }
+    SUBDIRS += glc_lib
 }
 
 SUBDIRS +=

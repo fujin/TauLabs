@@ -281,6 +281,35 @@
                    </layout>
                   </item>
                   <item>
+                   <widget class="QGroupBox" name="bypassFailsafeGroup">
+                    <property name="title">
+                     <string>Bypass Failsafe Check</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="verticalLayout_4">
+                     <item>
+                      <widget class="QLabel" name="label_2">
+                       <property name="text">
+                        <string>I understand that this means the flight controller cannot failsafe and will fly away (NOT RECOMMENDED)</string>
+                       </property>
+                       <property name="wordWrap">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QCheckBox" name="cbBypassFailsafe">
+                       <property name="enabled">
+                        <bool>true</bool>
+                       </property>
+                       <property name="text">
+                        <string>Bypass Failsafe Check</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
                    <layout class="QHBoxLayout" name="horizontalLayout_3">
                     <item>
                      <widget class="QPushButton" name="wzBack">
@@ -1398,7 +1427,8 @@ Set to 0 to disable (recommended for soaring fixed wings).</string>
               <item>
                <widget class="QLabel" name="label_3">
                 <property name="text">
-                 <string>Airframe disarm is done by throttle off and opposite of above combination, except in the case of the switch option. For switch the throttle is ignored.</string>
+                 <string>Airframe disarm is done by throttle off and opposite of above combination, except in the case of the switch option. For switch only the throttle is ignored.
+Note: In switch configuration without delay, zeroing the gyros while arming is not possible.</string>
                 </property>
                 <property name="wordWrap">
                  <bool>true</bool>

@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/motolab">
+        <file>images/tornadof3.png</file>
+    </qresource>
+</RCC>

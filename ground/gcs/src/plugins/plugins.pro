@@ -343,3 +343,9 @@ plugin_boards_aeroquad.subdir = boards_aeroquad
 plugin_boards_aeroquad.depends = plugin_coreplugin
 plugin_boards_aeroquad.depends = plugin_uavobjects
 SUBDIRS += plugin_boards_aeroquad
+
+# Motolab
+plugin_boards_motolab.subdir = boards_motolab
+plugin_boards_motolab.depends = plugin_coreplugin
+plugin_boards_motolab.depends = plugin_uavobjects
+SUBDIRS += plugin_boards_motolab

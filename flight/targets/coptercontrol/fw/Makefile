@@ -63,6 +63,7 @@ USE_I2C ?= NO
 USE_ALTITUDE ?= NO
 USE_AUTOTUNE ?= YES
 USE_UAVOMAVLINKBRIDGE ?= YES
+USE_UAVOMSPBRIDGE ?= YES
 USE_UAVOLIGHTTELEMETRYBRIDGE ?= NO
 USE_UAVOFRSKYSENSORHUBBRIDGE ?= YES
 USE_PCF8591 ?= NO
@@ -100,6 +101,9 @@ OPTMODULES += Autotune
 endif
 ifeq ($(USE_UAVOMAVLINKBRIDGE), YES)
 OPTMODULES += UAVOMavlinkBridge
+endif
+ifeq ($(USE_UAVOMSPBRIDGE), YES)
+OPTMODULES += UAVOMSPBridge
 endif
 ifeq ($(USE_UAVOFRSKYSENSORHUBBRIDGE), YES)
 OPTMODULES += UAVOFrSKYSensorHubBridge
@@ -157,7 +161,6 @@ SRC += pios_board.c
 SRC += $(FLIGHTLIB)/alarms.c
 SRC += $(OPUAVTALK)/uavtalk.c
 SRC += $(OPUAVOBJ)/uavobjectmanager.c
-SRC += $(OPUAVOBJ)/eventdispatcher.c
 else
 ## TESTCODE
 SRC += $(OPTESTS)/test_common.c
@@ -189,7 +192,6 @@ SRC += $(PIOSSTM32F10X)/pios_bl_helper.c
 SRC += $(PIOSSTM32F10X)/pios_usb.c
 SRC += $(PIOSSTM32F10X)/pios_usbhook.c
 SRC += $(PIOSSTM32F10X)/pios_usb_hid.c
-SRC += $(PIOSSTM32F10X)/pios_usb_rctx.c
 SRC += $(PIOSSTM32F10X)/pios_usb_cdc.c
 SRC += $(PIOSSTM32F10X)/pios_usb_hid_istr.c
 SRC += $(PIOSSTM32F10X)/pios_usb_hid_pwr.c
@@ -219,6 +221,7 @@ SRC += $(PIOSCOMMON)/pios_flash.c
 ifeq ($(USE_PCF8591), YES)
 SRC += $(PIOSCOMMON)/pios_pcf8591_adc.c
 endif
+SRC += $(PIOSCOMMON)/pios_hal.c
 SRC += $(PIOSCOMMON)/pios_heap.c
 SRC += $(PIOSCOMMON)/pios_semaphore.c
 SRC += $(PIOSCOMMON)/pios_mutex.c
